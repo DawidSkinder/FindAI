@@ -1444,6 +1444,15 @@ body.is-canvas-panning {
 }
 
 @media (max-width: 420px) {
+  .intro-headline-main {
+    font-size: clamp(54px, 16vw, 68px);
+    line-height: 0.96;
+  }
+
+  .intro-headline-symbol {
+    width: clamp(68px, 19vw, 80px);
+  }
+
   .manifesto-title {
     font-size: 34px;
   }

@@ -46,7 +46,7 @@ const activeDesignWorldConfig = coarsePointerQuery.matches
       manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
       baseUrl: "generated/design-v2-smaller-pyramid",
       useOverview: false,
-      tileLoading: "lazy",
+      tileLoading: "eager",
       tileBuffer: 0,
       tileExtension: "webp",
       tileEvictionPolicy: "visible-only",

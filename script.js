@@ -48,6 +48,7 @@ const activeDesignWorldConfig = coarsePointerQuery.matches
       useOverview: false,
       tileLoading: "lazy",
       tileBuffer: 0,
+      tileExtension: "webp",
       tileEvictionPolicy: "visible-only",
       maxRetainedTiles: 6,
       maxScale: 0.4,

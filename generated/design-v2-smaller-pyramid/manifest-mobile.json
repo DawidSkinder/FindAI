@@ -1,0 +1,49 @@
+{
+  "height": 6008,
+  "levels": [
+    {
+      "columns": 15,
+      "height": 3004,
+      "index": 1,
+      "rows": 3,
+      "scale": 0.5,
+      "width": 15000
+    },
+    {
+      "columns": 8,
+      "height": 1502,
+      "index": 2,
+      "rows": 2,
+      "scale": 0.25,
+      "width": 7500
+    },
+    {
+      "columns": 4,
+      "height": 751,
+      "index": 3,
+      "rows": 1,
+      "scale": 0.125,
+      "width": 3750
+    },
+    {
+      "columns": 2,
+      "height": 376,
+      "index": 4,
+      "rows": 1,
+      "scale": 0.0625,
+      "width": 1875
+    },
+    {
+      "columns": 1,
+      "height": 188,
+      "index": 5,
+      "rows": 1,
+      "scale": 0.03125,
+      "width": 938
+    }
+  ],
+  "overview": "overview.png",
+  "source": "design_v2_smaller.png",
+  "tileSize": 1024,
+  "width": 30000
+}

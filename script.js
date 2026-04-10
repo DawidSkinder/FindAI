@@ -24,8 +24,6 @@ const worldTransitionDurationMs = 960;
 const worldFadeOutDurationMs = 1400;
 const postgameMessageHoldDurationMs = 3000;
 const postgameMessageFadeDurationMs = 360;
-const activeDesignWorldManifestUrl = "generated/design-v2-smaller-pyramid/manifest.json";
-const activeDesignWorldBaseUrl = "generated/design-v2-smaller-pyramid";
 const canonicalShareUrl = "https://findai.dawidskinder.pl/";
 const shareTitle = "Find AI in DESIGN";
 const shareMessage = `I just played Find AI by @DawidSkinder.
@@ -42,6 +40,24 @@ const gameCanvasPanBounds = {
 const countdownSteps = ["3", "2", "1", "Start!"];
 const countdownStepDurationMs = 1120;
 const countdownFadeDurationMs = 320;
+const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+const activeDesignWorldConfig = coarsePointerQuery.matches
+  ? {
+      manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
+      baseUrl: "generated/design-v2-smaller-pyramid",
+      tileBuffer: 0,
+      tileEvictionPolicy: "visible-only",
+      maxRetainedTiles: 12,
+      maxScale: 0.75,
+    }
+  : {
+      manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
+      baseUrl: "generated/design-v2-smaller-pyramid",
+      tileBuffer: 1,
+      tileEvictionPolicy: "none",
+      maxRetainedTiles: Number.POSITIVE_INFINITY,
+      maxScale: 1,
+    };
 let infiniteCanvas = null;
 let designWorld = null;
 let isZoomMenuOpen = false;
@@ -530,7 +546,7 @@ if (canvasElement && window.InfiniteCanvasBackground) {
   infiniteCanvas = new window.InfiniteCanvasBackground(canvasElement, {
     interactionEnabled: false,
     minScale: 0.05,
-    maxScale: 1,
+    maxScale: activeDesignWorldConfig.maxScale,
     ambientGlowTargetProvider: () => {
       if (!introHeadlineSymbol || !canvasElement) {
         return null;
@@ -565,8 +581,11 @@ if (canvasElement && window.InfiniteCanvasBackground) {
 
 if (designWorldElement && window.DesignWorldLayer) {
   designWorld = new window.DesignWorldLayer(designWorldElement, {
-    manifestUrl: activeDesignWorldManifestUrl,
-    baseUrl: activeDesignWorldBaseUrl,
+    manifestUrl: activeDesignWorldConfig.manifestUrl,
+    baseUrl: activeDesignWorldConfig.baseUrl,
+    tileBuffer: activeDesignWorldConfig.tileBuffer,
+    tileEvictionPolicy: activeDesignWorldConfig.tileEvictionPolicy,
+    maxRetainedTiles: activeDesignWorldConfig.maxRetainedTiles,
     onReady: (worldSize) => {
       if (worldSize) {
         infiniteCanvas?.setCameraBounds({

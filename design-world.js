@@ -20,7 +20,9 @@
       this.manifest = null;
       this.overviewImage = null;
       this.isMounted = false;
-      this.tileBuffer = 1;
+      this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
+      this.tileEvictionPolicy = options.tileEvictionPolicy ?? "none";
+      this.maxRetainedTiles = Number.isFinite(options.maxRetainedTiles) ? Math.max(0, options.maxRetainedTiles) : Number.POSITIVE_INFINITY;
       this.rafId = 0;
     }
 
@@ -215,6 +217,8 @@
         element.hidden = true;
       }
 
+      this.pruneTiles(nextKeys, level.index);
+
       this.currentKeys = nextKeys;
       this.currentLevelIndex = level.index;
     }
@@ -252,6 +256,60 @@
       tile.style.width = `${worldWidth}px`;
       tile.style.height = `${worldHeight}px`;
       tile.hidden = false;
+    }
+
+    pruneTiles(nextKeys, levelIndex) {
+      if (this.tileEvictionPolicy === "visible-only") {
+        for (const [key, element] of this.tileElements) {
+          if (nextKeys.has(key)) {
+            continue;
+          }
+
+          this.removeTileElement(key, element);
+        }
+
+        return;
+      }
+
+      if (!Number.isFinite(this.maxRetainedTiles) || this.tileElements.size <= this.maxRetainedTiles) {
+        return;
+      }
+
+      const evictionCandidates = [];
+
+      for (const [key, element] of this.tileElements) {
+        if (nextKeys.has(key)) {
+          continue;
+        }
+
+        const [tileLevelIndexValue = "-1"] = key.split(":");
+        const tileLevelIndex = Number.parseInt(tileLevelIndexValue, 10);
+
+        evictionCandidates.push({
+          key,
+          element,
+          priority: tileLevelIndex === levelIndex ? 1 : 0,
+        });
+      }
+
+      evictionCandidates.sort((left, right) => left.priority - right.priority);
+
+      for (const candidate of evictionCandidates) {
+        if (this.tileElements.size <= this.maxRetainedTiles) {
+          break;
+        }
+
+        this.removeTileElement(candidate.key, candidate.element);
+      }
+    }
+
+    removeTileElement(key, element) {
+      if (element instanceof HTMLImageElement) {
+        element.removeAttribute("src");
+      }
+
+      element?.remove();
+      this.tileElements.delete(key);
     }
   }
 

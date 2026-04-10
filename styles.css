@@ -1484,7 +1484,7 @@ body.is-canvas-panning {
   }
 
   .stage[data-ui-state="reveal"] .infinite-canvas {
-    opacity: 0;
+    display: none;
   }
 
   .stage[data-ui-state="reveal"] .manifesto-panel {

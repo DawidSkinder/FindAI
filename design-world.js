@@ -25,6 +25,7 @@
       this.useOverview = options.useOverview ?? true;
       this.overviewPath = typeof options.overviewPath === "string" && options.overviewPath ? options.overviewPath : "";
       this.decodeBeforeAttach = options.decodeBeforeAttach ?? false;
+      this.attachBeforeLoad = options.attachBeforeLoad ?? false;
       this.tileLoading = options.tileLoading ?? "eager";
       this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
       this.interactiveTileBuffer = Number.isFinite(options.interactiveTileBuffer)
@@ -368,6 +369,18 @@
         return;
       }
 
+      if (this.attachBeforeLoad && !this.decodeBeforeAttach) {
+        const tile = this.createTileElement(key, level.index);
+
+        this.applyTileLayout(tile, layout);
+        tile.hidden = false;
+        this.touchTileElement(tile);
+        this.tileElements.set(key, tile);
+        this.surface.appendChild(tile);
+        tile.src = this.getTileUrl(level.index, column, row);
+        return;
+      }
+
       const nextPendingTile = {
         key,
         levelIndex: level.index,
@@ -381,6 +394,20 @@
 
       this.pendingTiles.set(key, nextPendingTile);
       this.loadTile(nextPendingTile);
+    }
+
+    createTileElement(key, levelIndex) {
+      const tile = document.createElement("img");
+
+      tile.className = "design-world-tile";
+      tile.decoding = "async";
+      tile.loading = this.tileLoading;
+      tile.draggable = false;
+      tile.alt = "";
+      tile.dataset.tileKey = key;
+      tile.dataset.tileLevelIndex = String(levelIndex);
+
+      return tile;
     }
 
     getTileUrl(levelIndex, column, row) {
@@ -409,15 +436,7 @@
     }
 
     async loadTile(pendingTile) {
-      const tile = document.createElement("img");
-
-      tile.className = "design-world-tile";
-      tile.decoding = "async";
-      tile.loading = this.tileLoading;
-      tile.draggable = false;
-      tile.alt = "";
-      tile.dataset.tileKey = pendingTile.key;
-      tile.dataset.tileLevelIndex = String(pendingTile.levelIndex);
+      const tile = this.createTileElement(pendingTile.key, pendingTile.levelIndex);
 
       try {
         await this.loadAndDecodeTile(tile, pendingTile.url);

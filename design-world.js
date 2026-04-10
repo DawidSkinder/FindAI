@@ -20,6 +20,8 @@
       this.manifest = null;
       this.overviewImage = null;
       this.isMounted = false;
+      this.useOverview = options.useOverview ?? true;
+      this.tileLoading = options.tileLoading ?? "eager";
       this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
       this.tileEvictionPolicy = options.tileEvictionPolicy ?? "none";
       this.maxRetainedTiles = Number.isFinite(options.maxRetainedTiles) ? Math.max(0, options.maxRetainedTiles) : Number.POSITIVE_INFINITY;
@@ -37,7 +39,9 @@
       try {
         this.manifest = await this.loadManifest();
         this.setupSurface();
-        this.loadOverview();
+        if (this.useOverview) {
+          this.loadOverview();
+        }
         this.root.dataset.worldState = "ready";
         this.scheduleTileRender();
 
@@ -242,7 +246,7 @@
         tile = document.createElement("img");
         tile.className = "design-world-tile";
         tile.decoding = "async";
-        tile.loading = "eager";
+        tile.loading = this.tileLoading;
         tile.draggable = false;
         tile.alt = "";
         tile.dataset.tileKey = key;

@@ -45,14 +45,18 @@ const activeDesignWorldConfig = coarsePointerQuery.matches
   ? {
       manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
       baseUrl: "generated/design-v2-smaller-pyramid",
+      useOverview: false,
+      tileLoading: "lazy",
       tileBuffer: 0,
       tileEvictionPolicy: "visible-only",
-      maxRetainedTiles: 12,
-      maxScale: 0.75,
+      maxRetainedTiles: 6,
+      maxScale: 0.4,
     }
   : {
       manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
       baseUrl: "generated/design-v2-smaller-pyramid",
+      useOverview: true,
+      tileLoading: "eager",
       tileBuffer: 1,
       tileEvictionPolicy: "none",
       maxRetainedTiles: Number.POSITIVE_INFINITY,
@@ -583,6 +587,8 @@ if (designWorldElement && window.DesignWorldLayer) {
   designWorld = new window.DesignWorldLayer(designWorldElement, {
     manifestUrl: activeDesignWorldConfig.manifestUrl,
     baseUrl: activeDesignWorldConfig.baseUrl,
+    useOverview: activeDesignWorldConfig.useOverview,
+    tileLoading: activeDesignWorldConfig.tileLoading,
     tileBuffer: activeDesignWorldConfig.tileBuffer,
     tileEvictionPolicy: activeDesignWorldConfig.tileEvictionPolicy,
     maxRetainedTiles: activeDesignWorldConfig.maxRetainedTiles,

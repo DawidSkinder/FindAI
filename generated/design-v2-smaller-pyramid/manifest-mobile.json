@@ -2,14 +2,6 @@
   "height": 6008,
   "levels": [
     {
-      "columns": 15,
-      "height": 3004,
-      "index": 1,
-      "rows": 3,
-      "scale": 0.5,
-      "width": 15000
-    },
-    {
       "columns": 8,
       "height": 1502,
       "index": 2,

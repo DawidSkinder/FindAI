@@ -24,8 +24,7 @@
       this.isMounted = false;
       this.useOverview = options.useOverview ?? true;
       this.overviewPath = typeof options.overviewPath === "string" && options.overviewPath ? options.overviewPath : "";
-      this.decodeBeforeAttach = options.decodeBeforeAttach ?? false;
-      this.attachBeforeLoad = options.attachBeforeLoad ?? false;
+      this.tileAttachMode = options.tileAttachMode === "attach-before-load" ? "attach-before-load" : "decode-before-attach";
       this.tileLoading = options.tileLoading ?? "eager";
       this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
       this.interactiveTileBuffer = Number.isFinite(options.interactiveTileBuffer)
@@ -369,7 +368,7 @@
         return;
       }
 
-      if (this.attachBeforeLoad && !this.decodeBeforeAttach) {
+      if (this.tileAttachMode === "attach-before-load") {
         const tile = this.createTileElement(key, level.index);
 
         this.applyTileLayout(tile, layout);
@@ -465,7 +464,7 @@
     loadAndDecodeTile(tile, url) {
       return new Promise((resolve, reject) => {
         const handleLoad = async () => {
-          if (this.decodeBeforeAttach && typeof tile.decode === "function") {
+          if (this.tileAttachMode === "decode-before-attach" && typeof tile.decode === "function") {
             try {
               await tile.decode();
             } catch (error) {

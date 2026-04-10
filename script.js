@@ -41,35 +41,41 @@ const countdownSteps = ["3", "2", "1", "Start!"];
 const countdownStepDurationMs = 1120;
 const countdownFadeDurationMs = 320;
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
-const activeDesignWorldConfig = coarsePointerQuery.matches
-  ? {
-      manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
-      baseUrl: "generated/design-v2-smaller-pyramid",
-      useOverview: false,
-      attachBeforeLoad: true,
-      tileLoading: "lazy",
-      tileBuffer: 0,
-      tileEvictionPolicy: "visible-only",
-      maxRetainedTiles: 6,
-      maxScale: 0.4,
-    }
-  : {
-      manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
-      baseUrl: "generated/design-v2-smaller-pyramid",
-      useOverview: true,
-      overviewPath: "overview.webp",
-      decodeBeforeAttach: true,
-      tileLoading: "eager",
-      tileBuffer: 1,
-      interactiveTileBuffer: 0,
-      tileExtension: "webp",
-      tileEvictionPolicy: "lru",
-      maxRetainedTiles: 48,
-      keepCurrentLevelWhileInteracting: true,
-      levelSwitchHysteresis: 0.35,
-      settleDelayMs: 120,
-      maxScale: 1,
-    };
+const mobileDesignWorldConfig = {
+  manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
+  baseUrl: "generated/design-v2-smaller-pyramid",
+  useOverview: false,
+  overviewPath: "",
+  tileAttachMode: "attach-before-load",
+  tileLoading: "lazy",
+  tileBuffer: 0,
+  interactiveTileBuffer: 0,
+  tileExtension: "png",
+  tileEvictionPolicy: "visible-only",
+  maxRetainedTiles: 6,
+  keepCurrentLevelWhileInteracting: false,
+  levelSwitchHysteresis: 0,
+  settleDelayMs: 96,
+  maxScale: 0.4,
+};
+const desktopDesignWorldConfig = {
+  manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
+  baseUrl: "generated/design-v2-smaller-pyramid",
+  useOverview: true,
+  overviewPath: "overview.webp",
+  tileAttachMode: "decode-before-attach",
+  tileLoading: "eager",
+  tileBuffer: 1,
+  interactiveTileBuffer: 0,
+  tileExtension: "webp",
+  tileEvictionPolicy: "lru",
+  maxRetainedTiles: 48,
+  keepCurrentLevelWhileInteracting: true,
+  levelSwitchHysteresis: 0.35,
+  settleDelayMs: 120,
+  maxScale: 1,
+};
+const activeDesignWorldConfig = coarsePointerQuery.matches ? mobileDesignWorldConfig : desktopDesignWorldConfig;
 let infiniteCanvas = null;
 let designWorld = null;
 let isZoomMenuOpen = false;
@@ -597,8 +603,7 @@ if (designWorldElement && window.DesignWorldLayer) {
     baseUrl: activeDesignWorldConfig.baseUrl,
     useOverview: activeDesignWorldConfig.useOverview,
     overviewPath: activeDesignWorldConfig.overviewPath,
-    decodeBeforeAttach: activeDesignWorldConfig.decodeBeforeAttach,
-    attachBeforeLoad: activeDesignWorldConfig.attachBeforeLoad,
+    tileAttachMode: activeDesignWorldConfig.tileAttachMode,
     tileLoading: activeDesignWorldConfig.tileLoading,
     tileBuffer: activeDesignWorldConfig.tileBuffer,
     interactiveTileBuffer: activeDesignWorldConfig.interactiveTileBuffer,

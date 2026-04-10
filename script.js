@@ -26,10 +26,10 @@ const postgameMessageHoldDurationMs = 3000;
 const postgameMessageFadeDurationMs = 360;
 const activeDesignWorldManifestUrl = "generated/design-v2-smaller-pyramid/manifest.json";
 const activeDesignWorldBaseUrl = "generated/design-v2-smaller-pyramid";
-const canonicalShareUrl = "https://findai.dawidskinder.pl";
+const canonicalShareUrl = "https://findai.dawidskinder.pl/";
 const shareMessage = `I just played Find AI by @DawidSkinder.
 
-https://findai.dawidskinder.pl
+https://findai.dawidskinder.pl/
 
 Zoom in. Look closely. See what you discover.
 

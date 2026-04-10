@@ -14,6 +14,7 @@
 - Added a narrow-mobile override at `max-width: 420px`.
 - Set `intro-headline-main` to `42px` in that range so `Find AI` stays on one line with the symbol.
 - Rebalanced the symbol width and headline gap for a stronger text-to-symbol proportion without forcing the first line to break.
+- Disabled browser text inflation by setting `-webkit-text-size-adjust` / `text-size-adjust` to `100%` so iPhone Safari does not upscale the intro headline beyond the authored CSS size.
 
 ## Validation
 - Reviewed the narrow-mobile CSS override path in `styles.css`.

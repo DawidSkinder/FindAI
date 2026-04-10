@@ -1477,6 +1477,32 @@ body.is-canvas-panning {
     --bottom-offset: 17px;
   }
 
+  .manifesto-panel {
+    display: block;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + var(--top-offset) + 64px)
+      var(--side-offset)
+      calc(env(safe-area-inset-bottom, 0px) + var(--bottom-offset) + 112px);
+  }
+
+  .manifesto-shell {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    gap: 28px;
+  }
+
+  .manifesto-copy {
+    gap: 28px;
+  }
+
+  .manifesto-body {
+    gap: 20px;
+  }
+
   .corner-top-right {
     min-width: 0;
     min-height: 40px;

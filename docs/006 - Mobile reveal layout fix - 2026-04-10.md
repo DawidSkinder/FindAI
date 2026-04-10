@@ -17,6 +17,7 @@
 - Made the mobile `manifesto-panel` behave like full-height document content instead of a centered fixed sheet.
 - Added touch-friendly scrolling behavior for the reveal state.
 - Added a mobile-only dot-pattern CSS background directly on the scrollable manifesto layer, because the viewport canvas alone was not reliably covering the full scrolled reveal height on iOS.
+- Disabled the original canvas grid visually during mobile reveal so the reveal state uses one dot-pattern layer instead of two overlapping grids.
 - Top-aligned the effective reveal reading area by increasing mobile top padding.
 - Reserved extra top space for the fixed corner controls and safe-area inset.
 - Reserved bottom space so the manifesto CTA and closing content are less likely to sit under fixed bottom UI.

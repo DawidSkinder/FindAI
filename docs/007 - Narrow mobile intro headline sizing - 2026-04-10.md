@@ -12,8 +12,8 @@
 
 ## Changes
 - Added a narrow-mobile override at `max-width: 420px`.
-- Increased the `intro-headline-main` font size aggressively in that range.
-- Reduced the symbol width slightly and tightened the headline gap so the text-to-symbol proportion is visibly stronger.
+- Increased the `intro-headline-main` font size in that range, but kept it restrained enough for `Find AI` to remain on one line with the symbol.
+- Rebalanced the symbol width and headline gap for a stronger text-to-symbol proportion without forcing the first line to break.
 
 ## Validation
 - Reviewed the narrow-mobile CSS override path in `styles.css`.

@@ -1445,13 +1445,13 @@ body.is-canvas-panning {
 
 @media (max-width: 420px) {
   .intro-headline-main {
-    font-size: clamp(64px, 19vw, 84px);
-    line-height: 0.92;
-    gap: 10px;
+    font-size: clamp(50px, 15.2vw, 62px);
+    line-height: 0.96;
+    gap: 12px;
   }
 
   .intro-headline-symbol {
-    width: clamp(56px, 15vw, 68px);
+    width: clamp(58px, 15.5vw, 70px);
   }
 
   .manifesto-title {

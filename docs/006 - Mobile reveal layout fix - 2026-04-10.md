@@ -13,8 +13,9 @@
 - The main reveal headline could sit underneath the fixed top-left and top-right UI controls.
 
 ## Changes
-- Turned the mobile `manifesto-panel` into a proper vertical scroll container.
-- Added touch-friendly scrolling behavior for the reveal overlay.
+- Switched the mobile reveal flow from a fixed poster-like overlay to a stage-level vertical scroll path during state E.
+- Made the mobile `manifesto-panel` behave like full-height document content instead of a centered fixed sheet.
+- Added touch-friendly scrolling behavior for the reveal state.
 - Top-aligned the effective reveal reading area by increasing mobile top padding.
 - Reserved extra top space for the fixed corner controls and safe-area inset.
 - Reserved bottom space so the manifesto CTA and closing content are less likely to sit under fixed bottom UI.

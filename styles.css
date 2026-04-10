@@ -1477,15 +1477,22 @@ body.is-canvas-panning {
     --bottom-offset: 17px;
   }
 
-  .manifesto-panel {
-    display: block;
+  .stage[data-ui-state="reveal"] {
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .stage[data-ui-state="reveal"] .manifesto-panel {
+    position: absolute;
+    inset: 0 0 auto;
+    min-height: 100%;
+    display: block;
+    overflow: visible;
     padding:
-      calc(env(safe-area-inset-top, 0px) + var(--top-offset) + 64px)
+      calc(env(safe-area-inset-top, 0px) + var(--top-offset) + 72px)
       var(--side-offset)
-      calc(env(safe-area-inset-bottom, 0px) + var(--bottom-offset) + 112px);
+      calc(env(safe-area-inset-bottom, 0px) + var(--bottom-offset) + 152px);
   }
 
   .manifesto-shell {
@@ -1493,6 +1500,11 @@ body.is-canvas-panning {
     max-width: 100%;
     margin: 0 auto;
     gap: 28px;
+  }
+
+  .manifesto-title,
+  .manifesto-subtitle {
+    max-width: calc(100vw - (var(--side-offset) * 2) - 12px);
   }
 
   .manifesto-copy {

@@ -27,6 +27,7 @@ const postgameMessageFadeDurationMs = 360;
 const activeDesignWorldManifestUrl = "generated/design-v2-smaller-pyramid/manifest.json";
 const activeDesignWorldBaseUrl = "generated/design-v2-smaller-pyramid";
 const canonicalShareUrl = "https://findai.dawidskinder.pl/";
+const shareTitle = "Find AI in DESIGN";
 const shareMessage = `I just played Find AI by @DawidSkinder.
 
 https://findai.dawidskinder.pl/
@@ -191,6 +192,63 @@ function buildShareHref(target) {
   }
 
   return "#";
+}
+
+function openSharePopup(url, name) {
+  const popupWidth = 720;
+  const popupHeight = 720;
+  const popupLeft = Math.max(0, Math.round(window.screenX + (window.outerWidth - popupWidth) / 2));
+  const popupTop = Math.max(0, Math.round(window.screenY + (window.outerHeight - popupHeight) / 2));
+  const popupFeatures = [
+    `width=${popupWidth}`,
+    `height=${popupHeight}`,
+    `left=${popupLeft}`,
+    `top=${popupTop}`,
+    "toolbar=no",
+    "location=yes",
+    "status=no",
+    "menubar=no",
+    "scrollbars=yes",
+    "resizable=yes",
+  ].join(",");
+
+  return window.open(url, name, popupFeatures);
+}
+
+function isMobileOrTabletShareContext() {
+  return mobileUiQuery.matches || window.matchMedia("(pointer: coarse)").matches;
+}
+
+async function handleLinkedInShareClick(event) {
+  const linkedinShareUrl = buildShareHref("linkedin");
+
+  if (isMobileOrTabletShareContext() && typeof navigator.share === "function") {
+    event.preventDefault();
+
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text: shareTitle,
+        url: canonicalShareUrl,
+      });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+    }
+  }
+
+  event.preventDefault();
+
+  const popup = openSharePopup(linkedinShareUrl, "linkedin-share");
+
+  if (popup) {
+    popup.focus();
+    return;
+  }
+
+  window.location.href = linkedinShareUrl;
 }
 
 function clearCountdownTimers() {
@@ -587,6 +645,10 @@ if (zoomToggleButton) {
 
 for (const shareLink of shareLinks) {
   shareLink.href = buildShareHref(shareLink.dataset.shareTarget);
+
+  if (shareLink.dataset.shareTarget === "linkedin") {
+    shareLink.addEventListener("click", handleLinkedInShareClick);
+  }
 }
 
 if (infoPill) {

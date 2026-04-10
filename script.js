@@ -42,23 +42,25 @@ const countdownStepDurationMs = 1120;
 const countdownFadeDurationMs = 320;
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
 const mobileDesignWorldConfig = {
+  modeName: "mobile",
   manifestUrl: "generated/design-v2-smaller-pyramid/manifest-mobile.json",
   baseUrl: "generated/design-v2-smaller-pyramid",
   useOverview: false,
   overviewPath: "",
   tileAttachMode: "attach-before-load",
-  tileLoading: "lazy",
+  tileLoading: "eager",
   tileBuffer: 0,
   interactiveTileBuffer: 0,
-  tileExtension: "png",
-  tileEvictionPolicy: "visible-only",
-  maxRetainedTiles: 6,
-  keepCurrentLevelWhileInteracting: false,
-  levelSwitchHysteresis: 0,
-  settleDelayMs: 96,
+  tileExtension: "webp",
+  tileEvictionPolicy: "lru",
+  maxRetainedTiles: 12,
+  keepCurrentLevelWhileInteracting: true,
+  levelSwitchHysteresis: 0.4,
+  settleDelayMs: 180,
   maxScale: 0.4,
 };
 const desktopDesignWorldConfig = {
+  modeName: "desktop",
   manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
   baseUrl: "generated/design-v2-smaller-pyramid",
   useOverview: true,
@@ -401,6 +403,16 @@ function startRevealSequence() {
 
   revealTimers.push(
     window.setTimeout(() => {
+      if (revealToken !== token) {
+        return;
+      }
+
+      designWorld?.clearTiles();
+    }, worldFadeOutDurationMs + 80),
+  );
+
+  revealTimers.push(
+    window.setTimeout(() => {
       if (revealToken !== token || !stage) {
         return;
       }
@@ -592,6 +604,11 @@ if (canvasElement && window.InfiniteCanvasBackground) {
     setUiState,
     getUiState: () => stage?.dataset.uiState ?? null,
     getGuessState: () => (guessState ? { ...guessState } : null),
+    getDiagnostics: () => ({
+      uiState: stage?.dataset.uiState ?? null,
+      canvas: infiniteCanvas?.getState() ?? null,
+      designWorld: designWorld?.getDiagnostics() ?? null,
+    }),
   };
 
   setUiState("intro");
@@ -599,6 +616,7 @@ if (canvasElement && window.InfiniteCanvasBackground) {
 
 if (designWorldElement && window.DesignWorldLayer) {
   designWorld = new window.DesignWorldLayer(designWorldElement, {
+    modeName: activeDesignWorldConfig.modeName,
     manifestUrl: activeDesignWorldConfig.manifestUrl,
     baseUrl: activeDesignWorldConfig.baseUrl,
     useOverview: activeDesignWorldConfig.useOverview,

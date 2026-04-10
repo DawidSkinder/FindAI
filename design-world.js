@@ -3,6 +3,7 @@
     constructor(root, options = {}) {
       this.root = root;
       this.surface = root?.querySelector("[data-design-world-surface]") ?? null;
+      this.modeName = typeof options.modeName === "string" && options.modeName ? options.modeName : "unknown";
       this.manifestUrl = options.manifestUrl ?? "";
       this.baseUrl = options.baseUrl ?? "";
       this.onReady = options.onReady ?? null;
@@ -42,6 +43,14 @@
       this.pendingRenderMode = "settled";
       this.settleTimeoutId = 0;
       this.tileUsageClock = 0;
+      this.diagnostics = {
+        createdTiles: 0,
+        removedTiles: 0,
+        failedTiles: 0,
+        levelSwitches: 0,
+        recentLevelSwitches: [],
+        recentTileErrors: [],
+      };
     }
 
     async mount() {
@@ -316,6 +325,7 @@
         mode === "interactive" && this.currentLevelIndex === level.index
           ? new Set([...this.currentKeys, ...nextKeys])
           : nextKeys;
+      const previousLevelIndex = this.currentLevelIndex;
 
       for (const [key, element] of this.tileElements) {
         if (visibleKeys.has(key)) {
@@ -334,6 +344,10 @@
 
       this.currentKeys = nextKeys;
       this.currentLevelIndex = level.index;
+
+      if (previousLevelIndex !== -1 && previousLevelIndex !== level.index) {
+        this.recordLevelSwitch(previousLevelIndex, level.index, mode);
+      }
     }
 
     ensureTile(level, factor, column, row, key) {
@@ -375,6 +389,7 @@
         tile.hidden = false;
         this.touchTileElement(tile);
         this.tileElements.set(key, tile);
+        this.diagnostics.createdTiles += 1;
         this.surface.appendChild(tile);
         tile.src = this.getTileUrl(level.index, column, row);
         return;
@@ -405,8 +420,38 @@
       tile.alt = "";
       tile.dataset.tileKey = key;
       tile.dataset.tileLevelIndex = String(levelIndex);
+      tile.addEventListener("error", () => {
+        this.recordTileError(tile.currentSrc || tile.src || key, "Image element failed to load");
+      });
 
       return tile;
+    }
+
+    recordLevelSwitch(fromLevel, toLevel, mode) {
+      this.diagnostics.levelSwitches += 1;
+      this.diagnostics.recentLevelSwitches.push({
+        fromLevel,
+        toLevel,
+        mode,
+        at: Date.now(),
+      });
+
+      if (this.diagnostics.recentLevelSwitches.length > 12) {
+        this.diagnostics.recentLevelSwitches.shift();
+      }
+    }
+
+    recordTileError(url, message) {
+      this.diagnostics.failedTiles += 1;
+      this.diagnostics.recentTileErrors.push({
+        url,
+        message,
+        at: Date.now(),
+      });
+
+      if (this.diagnostics.recentTileErrors.length > 12) {
+        this.diagnostics.recentTileErrors.shift();
+      }
     }
 
     getTileUrl(levelIndex, column, row) {
@@ -444,6 +489,7 @@
           this.pendingTiles.delete(pendingTile.key);
         }
 
+        this.recordTileError(pendingTile.url, error?.message ?? "Unable to load tile");
         console.warn("Failed to load design world tile", error);
         return;
       }
@@ -456,6 +502,7 @@
       tile.hidden = pendingTile.hidden;
       this.touchTileElement(tile, pendingTile.lastUsedAt);
       this.tileElements.set(pendingTile.key, tile);
+      this.diagnostics.createdTiles += 1;
       this.pendingTiles.delete(pendingTile.key);
       this.surface.appendChild(tile);
       this.pruneTiles(this.currentKeys, this.currentLevelIndex);
@@ -552,6 +599,74 @@
 
       element?.remove();
       this.tileElements.delete(key);
+      this.diagnostics.removedTiles += 1;
+    }
+
+    clearTiles() {
+      if (this.rafId) {
+        window.cancelAnimationFrame(this.rafId);
+        this.rafId = 0;
+      }
+
+      if (this.settleTimeoutId) {
+        window.clearTimeout(this.settleTimeoutId);
+        this.settleTimeoutId = 0;
+      }
+
+      for (const [key, element] of this.tileElements) {
+        this.removeTileElement(key, element);
+      }
+
+      this.pendingTiles.clear();
+      this.currentKeys.clear();
+      this.currentLevelIndex = -1;
+      this.pendingRenderMode = "settled";
+    }
+
+    getEstimatedDecodedTileBytes() {
+      let totalBytes = 0;
+
+      for (const element of this.tileElements.values()) {
+        const width = element.naturalWidth || Number.parseFloat(element.getAttribute("width") || "0");
+        const height = element.naturalHeight || Number.parseFloat(element.getAttribute("height") || "0");
+
+        if (!Number.isFinite(width) || !Number.isFinite(height)) {
+          continue;
+        }
+
+        totalBytes += Math.round(width * height * 4);
+      }
+
+      return totalBytes;
+    }
+
+    getDiagnostics() {
+      const estimatedDecodedTileBytes = this.getEstimatedDecodedTileBytes();
+
+      return {
+        modeName: this.modeName,
+        manifestUrl: this.manifestUrl,
+        tileExtension: this.tileExtension,
+        tileAttachMode: this.tileAttachMode,
+        tileLoading: this.tileLoading,
+        tileEvictionPolicy: this.tileEvictionPolicy,
+        maxRetainedTiles: this.maxRetainedTiles,
+        keepCurrentLevelWhileInteracting: this.keepCurrentLevelWhileInteracting,
+        levelSwitchHysteresis: this.levelSwitchHysteresis,
+        settleDelayMs: this.settleDelayMs,
+        currentLevelIndex: this.currentLevelIndex,
+        visibleTileCount: this.currentKeys.size,
+        retainedTileCount: this.tileElements.size,
+        pendingTileCount: this.pendingTiles.size,
+        estimatedDecodedTileBytes,
+        estimatedDecodedTileMiB: Math.round((estimatedDecodedTileBytes / 1024 / 1024) * 100) / 100,
+        createdTiles: this.diagnostics.createdTiles,
+        removedTiles: this.diagnostics.removedTiles,
+        failedTiles: this.diagnostics.failedTiles,
+        levelSwitches: this.diagnostics.levelSwitches,
+        recentLevelSwitches: [...this.diagnostics.recentLevelSwitches],
+        recentTileErrors: [...this.diagnostics.recentTileErrors],
+      };
     }
   }
 

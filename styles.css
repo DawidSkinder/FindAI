@@ -196,6 +196,12 @@ body.is-canvas-panning {
   image-rendering: auto;
 }
 
+@media (pointer: coarse) {
+  .stage[data-ui-state="game"] .design-world-surface {
+    filter: none;
+  }
+}
+
 .stage.is-hand-mode .infinite-canvas {
   cursor: grab;
 }

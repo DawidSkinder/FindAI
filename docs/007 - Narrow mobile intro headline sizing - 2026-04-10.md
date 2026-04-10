@@ -12,8 +12,8 @@
 
 ## Changes
 - Added a narrow-mobile override at `max-width: 420px`.
-- Increased the `intro-headline-main` font size in that range.
-- Slightly rebalanced the symbol width so the text-to-symbol proportion is more intentional.
+- Increased the `intro-headline-main` font size aggressively in that range.
+- Reduced the symbol width slightly and tightened the headline gap so the text-to-symbol proportion is visibly stronger.
 
 ## Validation
 - Reviewed the narrow-mobile CSS override path in `styles.css`.

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Find AI in DESIGN — Interactive Search Experience</title>
+    <meta
+      name="description"
+      content="Search inside a massive inspectable DESIGN world. A visually striking interactive experience about observation, detail, and the future of design."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Find AI in DESIGN — Interactive Search Experience" />
+    <meta
+      property="og:description"
+      content="Search inside a massive inspectable DESIGN world. A visually striking interactive experience about observation, detail, and the future of design."
+    />
+    <meta property="og:image" content="assets/noaiindesign_ogimage.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Find AI in DESIGN — Interactive Search Experience" />
+    <meta
+      name="twitter:description"
+      content="Search inside a massive inspectable DESIGN world. A visually striking interactive experience about observation, detail, and the future of design."
+    />
+    <meta name="twitter:image" content="assets/noaiindesign_ogimage.png" />
+    <link rel="icon" type="image/png" href="assets/noaiindesign_favicon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="infinite-canvas.js" defer></script>
+    <script src="generated/design-v2-smaller-pyramid/manifest.js" defer></script>
+    <script src="design-world.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <main class="stage" data-ui-state="intro" aria-labelledby="main-title">
+      <canvas class="infinite-canvas" data-infinite-canvas aria-hidden="true"></canvas>
+      <div class="design-world" data-design-world aria-hidden="true">
+        <div class="design-world-surface" data-design-world-surface></div>
+      </div>
+      <div class="guess-layer" data-guess-layer aria-hidden="true">
+        <div class="guess-surface" data-guess-surface>
+          <div class="guess-marker" data-guess-marker hidden>
+            <span class="guess-marker-ring guess-marker-ring-outer"></span>
+            <span class="guess-marker-ring guess-marker-ring-inner"></span>
+            <span class="guess-marker-dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="corner corner-top-left">
+        <button class="brand-pill" type="button" data-reset-view aria-label="Return to intro state">
+          <img class="brand-logo brand-logo-ds" src="assets/ds-logo.svg" alt="" width="45" height="16" />
+          <span class="brand-separator" aria-hidden="true"></span>
+          <img class="brand-logo brand-logo-find" src="assets/find-logo.svg" alt="" width="75" height="12" />
+        </button>
+      </div>
+
+      <div class="corner corner-top-right">
+        <button class="start-game-button" type="button" data-enter-game aria-label="Start the search">
+          <span class="start-game-label">Start the search</span>
+          <img class="start-game-icon" src="assets/start-arrow.svg" alt="" width="15" height="16" />
+        </button>
+
+        <div class="game-controls" aria-label="Canvas controls">
+          <button
+            class="control-button control-button-tool is-active"
+            type="button"
+            data-tool-button="cursor"
+            aria-label="Cursor tool"
+            aria-pressed="true"
+          >
+            <img class="control-icon" src="assets/canvas-cursor.svg" alt="" width="12" height="12" />
+          </button>
+          <button
+            class="control-button control-button-tool control-button-hand"
+            type="button"
+            data-tool-button="hand"
+            aria-label="Hand tool"
+            aria-pressed="false"
+          >
+            <img class="control-icon" src="assets/canvas-hand.svg" alt="" width="11" height="12" />
+          </button>
+          <div class="zoom-control">
+            <button
+              class="zoom-pill"
+              type="button"
+              data-zoom-toggle
+              aria-label="Zoom options"
+              aria-expanded="false"
+              aria-haspopup="menu"
+            >
+              <span data-zoom-readout>50%</span>
+            </button>
+            <div class="zoom-menu" data-zoom-menu hidden>
+              <button class="zoom-menu-item" type="button" data-zoom-action="in">
+                <span>Zoom in</span>
+                <span class="zoom-menu-shortcut" aria-hidden="true">⌘ +</span>
+              </button>
+              <button class="zoom-menu-item" type="button" data-zoom-action="out">
+                <span>Zoom out</span>
+                <span class="zoom-menu-shortcut" aria-hidden="true">⌘ -</span>
+              </button>
+              <button class="zoom-menu-item" type="button" data-zoom-action="100">
+                <span>Zoom to 100%</span>
+                <span class="zoom-menu-shortcut" aria-hidden="true">⇧ 0</span>
+              </button>
+              <button class="zoom-menu-item" type="button" data-zoom-action="fit">
+                <span>Zoom to Fit</span>
+                <span class="zoom-menu-shortcut" aria-hidden="true">⇧ 1</span>
+              </button>
+            </div>
+          </div>
+          <button class="control-button" type="button" data-reset-view aria-label="Return to intro state">
+            <img class="control-icon" src="assets/canvas-refresh.svg" alt="" width="12" height="12" />
+          </button>
+          <div
+            class="progress-shell progress-pill"
+            role="progressbar"
+            aria-label="45 second progress cycle"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            data-progress-cycle
+          >
+            <svg class="progress-icon" viewBox="0 0 32 32" aria-hidden="true">
+              <circle class="progress-outline" cx="16" cy="16" r="15" />
+              <path class="progress-fill" data-progress-fill d="M 16 16 L 16 6 Z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="reveal-controls" aria-label="Reveal controls">
+          <button class="control-button" type="button" data-reset-view aria-label="Return to intro state">
+            <img class="control-icon" src="assets/canvas-refresh.svg" alt="" width="12" height="12" />
+          </button>
+        </div>
+      </div>
+
+      <section class="headline-wrap" aria-label="Opening statement">
+        <div class="intro-headline" id="main-title">
+          <h1 class="intro-headline-main">
+            <span class="intro-headline-word">Find AI</span>
+            <img class="intro-headline-symbol" src="assets/find-symbol.svg" alt="" width="88" height="88" />
+            <span class="intro-headline-word">symbol</span>
+          </h1>
+          <p class="intro-headline-subtitle">Somewhere inside DESIGN.</p>
+          <p class="intro-headline-instruction">
+            <span>Focus, you only have 45 seconds. Mark the symbol</span>
+            <img class="intro-mouse-icon" src="assets/left-click-mouse.svg" alt="" width="15" height="20" />
+            <span>when you find it.</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="countdown-panel" aria-label="Challenge countdown" aria-live="polite" aria-atomic="true">
+        <p class="countdown-text" data-countdown-text></p>
+      </section>
+
+      <section class="postgame-panel" aria-label="End of search message" aria-live="polite" aria-atomic="true">
+        <p class="postgame-text" data-postgame-text>Time has passed. Curious what was wrong?</p>
+      </section>
+
+      <section class="manifesto-panel" aria-label="Reveal manifesto">
+        <div class="manifesto-shell">
+          <div class="manifesto-copy">
+            <h2 class="manifesto-title">There is no “AI” in DESIGN</h2>
+            <p class="manifesto-subtitle">Because design was never about the tool.</p>
+            <div class="manifesto-body">
+              <p>
+                Tools change. Fast. New ones arrive every week. AI will change how design is made. It will speed up
+                output, expand access, and raise the floor.
+              </p>
+              <p>
+                But output is not the same as design. Design is deciding what matters. What problem is worth solving.
+                What outcome is worth pursuing. What to simplify. What to keep. What to make clear.
+              </p>
+              <p>
+                Better tools make fundamentals matter more, because when everyone can generate, judgment becomes the
+                edge. Taste becomes the filter. Experience becomes leverage. And design is what turns capability into
+                advantage.
+              </p>
+              <p>
+                So use AI. Push it. Learn it. Just do not confuse operating tools with knowing what good looks like.
+              </p>
+            </div>
+          </div>
+
+          <div class="manifesto-signoff">
+            <img class="manifesto-ds-logo" src="assets/ds-logo.svg" alt="DS" width="45" height="16" />
+            <span class="divider" aria-hidden="true"></span>
+            <img class="manifesto-dawid-mark" src="assets/dawid-mark.svg" alt="Dawid Skinder mark" width="21" height="16" />
+            <span class="divider" aria-hidden="true"></span>
+            <p class="manifesto-meta">
+              <span>Brand / Product / UX / UI Designer and Manager who leads</span>
+              <span>creative &amp; development teams to drive Web3 adoption.</span>
+            </p>
+          </div>
+
+          <a
+            class="manifesto-cta"
+            href="https://www.dawidskinder.pl"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Visit Dawid Skinder website"
+          >
+            <img class="manifesto-avatar" src="assets/ds-avatar-v3.png" alt="" width="32" height="32" />
+            <span>Build your next product with me</span>
+            <img class="manifesto-cta-arrow" src="assets/cta-arrow-diagonal.svg" alt="" width="16" height="16" />
+          </a>
+        </div>
+      </section>
+
+      <div class="corner corner-bottom-left">
+        <div class="share-pill" role="group" aria-label="Share this page">
+          <span class="share-label">Share on</span>
+          <a
+            class="share-link"
+            href="#"
+            target="_blank"
+            rel="noreferrer"
+            data-share-target="x"
+            aria-label="Share on X"
+          >
+            <img class="share-icon share-icon-x" src="assets/close-mark.svg" alt="" width="18" height="16" />
+          </a>
+          <span class="share-divider" aria-hidden="true"></span>
+          <a
+            class="share-link"
+            href="#"
+            target="_blank"
+            rel="noreferrer"
+            data-share-target="linkedin"
+            aria-label="Share on LinkedIn"
+          >
+            <img
+              class="share-icon share-icon-linkedin"
+              src="assets/linkedin-mark.svg"
+              alt=""
+              width="16"
+              height="16"
+            />
+          </a>
+        </div>
+      </div>
+
+      <div class="corner corner-bottom-right">
+        <div class="bottom-cluster">
+          <div class="stack-pill" aria-label="Experience built with AI, directed by judgment">
+            <span class="stack-copy">
+              <span>Experience built with AI</span>
+              <img class="icon-12" src="assets/spark.svg" alt="" width="12" height="12" />
+              <span>, directed by judgment.</span>
+            </span>
+            <span class="divider" aria-hidden="true"></span>
+            <img class="icon-figma" src="assets/figma-mark.svg" alt="" width="12" height="19" />
+            <span class="divider" aria-hidden="true"></span>
+            <img class="icon-20" src="assets/openai-mark.svg" alt="" width="20" height="20" />
+            <span class="divider" aria-hidden="true"></span>
+            <img class="icon-magnific" src="assets/magnificai.png" alt="" width="25" height="20" />
+          </div>
+          <div class="info-popover">
+            <button
+              class="info-pill"
+              type="button"
+              aria-label="Information"
+              aria-controls="info-panel"
+              aria-expanded="false"
+              aria-describedby="info-panel"
+            >
+              <span class="info-pill-mark">i</span>
+            </button>
+            <div class="info-panel" id="info-panel" role="note" aria-label="Technology and AI used">
+              <p>
+                Built as a handcrafted static web experience using HTML, CSS, and vanilla JavaScript, with a tiled-image
+                system for the inspectable DESIGN world.
+              </p>
+              <p>
+                AI was used as leverage across concepting, image generation, enhancement, and implementation: Figma,
+                ChatGPT, GPT Image, Codex, and Magnific AI.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

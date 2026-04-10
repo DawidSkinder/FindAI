@@ -1497,6 +1497,9 @@ body.is-canvas-panning {
     min-height: 100%;
     display: block;
     overflow: visible;
+    background-image: radial-gradient(circle, rgb(101 101 101 / 0.78) 0.9px, transparent 1.1px);
+    background-size: 16px 16px;
+    background-position: 0 0;
     padding:
       calc(env(safe-area-inset-top, 0px) + var(--top-offset) + 72px)
       var(--side-offset)

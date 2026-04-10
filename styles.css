@@ -1450,7 +1450,7 @@ body.is-canvas-panning {
 
 @media (max-width: 420px) {
   .intro-headline-main {
-    font-size: 42px;
+    font-size: 44px;
     line-height: 0.96;
     gap: 12px;
   }

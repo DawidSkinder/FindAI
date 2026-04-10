@@ -7,7 +7,7 @@
       this.baseUrl = options.baseUrl ?? "";
       this.onReady = options.onReady ?? null;
       this.tileElements = new Map();
-      this.loadedTiles = new Set();
+      this.pendingTiles = new Map();
       this.currentLevelIndex = -1;
       this.currentKeys = new Set();
       this.viewState = {
@@ -16,16 +16,31 @@
         scale: 1,
         viewportWidth: 0,
         viewportHeight: 0,
+        isPanning: false,
       };
       this.manifest = null;
+      this.levelMap = new Map();
       this.overviewImage = null;
       this.isMounted = false;
       this.useOverview = options.useOverview ?? true;
+      this.decodeBeforeAttach = options.decodeBeforeAttach ?? false;
       this.tileLoading = options.tileLoading ?? "eager";
       this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
+      this.interactiveTileBuffer = Number.isFinite(options.interactiveTileBuffer)
+        ? Math.max(0, options.interactiveTileBuffer)
+        : Math.max(0, this.tileBuffer - 1);
       this.tileEvictionPolicy = options.tileEvictionPolicy ?? "none";
       this.maxRetainedTiles = Number.isFinite(options.maxRetainedTiles) ? Math.max(0, options.maxRetainedTiles) : Number.POSITIVE_INFINITY;
+      this.keepCurrentLevelWhileInteracting = options.keepCurrentLevelWhileInteracting ?? false;
+      this.levelSwitchHysteresis = Number.isFinite(options.levelSwitchHysteresis)
+        ? Math.max(0, options.levelSwitchHysteresis)
+        : 0;
+      this.settleDelayMs = Number.isFinite(options.settleDelayMs) ? Math.max(0, options.settleDelayMs) : 96;
+      this.tileExtension = typeof options.tileExtension === "string" && options.tileExtension ? options.tileExtension : "png";
       this.rafId = 0;
+      this.pendingRenderMode = "settled";
+      this.settleTimeoutId = 0;
+      this.tileUsageClock = 0;
     }
 
     async mount() {
@@ -38,6 +53,7 @@
 
       try {
         this.manifest = await this.loadManifest();
+        this.levelMap = new Map(this.manifest.levels.map((level) => [level.index, level]));
         this.setupSurface();
         if (this.useOverview) {
           this.loadOverview();
@@ -79,9 +95,15 @@
       this.surface.style.width = `${this.manifest.width}px`;
       this.surface.style.height = `${this.manifest.height}px`;
       this.tileElements.clear();
-      this.loadedTiles.clear();
+      this.pendingTiles.clear();
       this.currentKeys.clear();
       this.currentLevelIndex = -1;
+      this.pendingRenderMode = "settled";
+
+      if (this.settleTimeoutId) {
+        window.clearTimeout(this.settleTimeoutId);
+        this.settleTimeoutId = 0;
+      }
     }
 
     loadOverview() {
@@ -125,16 +147,38 @@
     }
 
     setView(state) {
-      this.viewState = {
+      const previousViewState = this.viewState;
+      const nextViewState = {
         offsetX: state.offsetX,
         offsetY: state.offsetY,
         scale: state.scale,
         viewportWidth: state.viewportWidth ?? this.root.clientWidth,
         viewportHeight: state.viewportHeight ?? this.root.clientHeight,
+        isPanning: Boolean(state.isPanning),
+      };
+      const hasTransformChanged =
+        previousViewState.offsetX !== nextViewState.offsetX ||
+        previousViewState.offsetY !== nextViewState.offsetY ||
+        previousViewState.scale !== nextViewState.scale ||
+        previousViewState.viewportWidth !== nextViewState.viewportWidth ||
+        previousViewState.viewportHeight !== nextViewState.viewportHeight;
+      const hasInteractionChanged = previousViewState.isPanning !== nextViewState.isPanning;
+
+      this.viewState = {
+        ...nextViewState,
       };
 
       this.applyTransform();
-      this.scheduleTileRender();
+
+      if (hasTransformChanged) {
+        this.scheduleTileRender("interactive");
+        this.scheduleSettledTileRender();
+        return;
+      }
+
+      if (hasInteractionChanged && !nextViewState.isPanning) {
+        this.scheduleSettledTileRender();
+      }
     }
 
     applyTransform() {
@@ -145,18 +189,55 @@
       this.surface.style.transform = `translate(${this.viewState.offsetX}px, ${this.viewState.offsetY}px) scale(${this.viewState.scale})`;
     }
 
-    scheduleTileRender() {
-      if (this.rafId || !this.isReady()) {
+    scheduleTileRender(mode = "settled") {
+      if (!this.isReady()) {
+        return;
+      }
+
+      const requestedPriority = mode === "settled" ? 1 : 0;
+      const pendingPriority = this.pendingRenderMode === "settled" ? 1 : 0;
+
+      if (!this.rafId || requestedPriority >= pendingPriority) {
+        this.pendingRenderMode = mode;
+      }
+
+      if (this.rafId) {
         return;
       }
 
       this.rafId = window.requestAnimationFrame(() => {
+        const renderMode = this.pendingRenderMode;
+
         this.rafId = 0;
-        this.renderTiles();
+        this.pendingRenderMode = "settled";
+        this.renderTiles(renderMode);
       });
     }
 
-    pickLevel() {
+    scheduleSettledTileRender() {
+      if (this.settleTimeoutId) {
+        window.clearTimeout(this.settleTimeoutId);
+      }
+
+      this.settleTimeoutId = window.setTimeout(() => {
+        this.settleTimeoutId = 0;
+        this.scheduleTileRender("settled");
+      }, this.settleDelayMs);
+    }
+
+    getLevelByIndex(levelIndex) {
+      return this.levelMap.get(levelIndex) ?? null;
+    }
+
+    getLevelScore(level) {
+      const factor = this.manifest.width / level.width;
+      const screenPixelsPerLevelPixel = this.viewState.scale * factor;
+      const clamped = Math.max(screenPixelsPerLevelPixel, 0.0001);
+
+      return Math.abs(Math.log2(clamped));
+    }
+
+    pickLevel(mode = "settled") {
       if (!this.manifest) {
         return null;
       }
@@ -165,10 +246,7 @@
       let bestScore = Number.POSITIVE_INFINITY;
 
       for (const level of this.manifest.levels) {
-        const factor = this.manifest.width / level.width;
-        const screenPixelsPerLevelPixel = this.viewState.scale * factor;
-        const clamped = Math.max(screenPixelsPerLevelPixel, 0.0001);
-        const score = Math.abs(Math.log2(clamped));
+        const score = this.getLevelScore(level);
 
         if (score < bestScore) {
           bestScore = score;
@@ -176,20 +254,41 @@
         }
       }
 
+      const currentLevel = this.getLevelByIndex(this.currentLevelIndex);
+
+      if (!currentLevel) {
+        return bestLevel;
+      }
+
+      if (mode === "interactive" && this.keepCurrentLevelWhileInteracting) {
+        return currentLevel;
+      }
+
+      if (bestLevel.index === currentLevel.index) {
+        return currentLevel;
+      }
+
+      const currentScore = this.getLevelScore(currentLevel);
+
+      if (currentScore <= bestScore + this.levelSwitchHysteresis) {
+        return currentLevel;
+      }
+
       return bestLevel;
     }
 
-    renderTiles() {
+    renderTiles(mode = "settled") {
       if (!this.manifest || !this.surface) {
         return;
       }
 
-      const level = this.pickLevel();
+      const level = this.pickLevel(mode);
 
       if (!level) {
         return;
       }
 
+      const tileBuffer = mode === "interactive" ? this.interactiveTileBuffer : this.tileBuffer;
       const factor = this.manifest.width / level.width;
       const tileWorldSize = this.manifest.tileSize * factor;
       const viewportLeft = (-this.viewState.offsetX) / this.viewState.scale;
@@ -197,10 +296,10 @@
       const viewportRight = (this.viewState.viewportWidth - this.viewState.offsetX) / this.viewState.scale;
       const viewportBottom = (this.viewState.viewportHeight - this.viewState.offsetY) / this.viewState.scale;
 
-      const startColumn = Math.max(0, Math.floor(viewportLeft / tileWorldSize) - this.tileBuffer);
-      const endColumn = Math.min(level.columns - 1, Math.floor(viewportRight / tileWorldSize) + this.tileBuffer);
-      const startRow = Math.max(0, Math.floor(viewportTop / tileWorldSize) - this.tileBuffer);
-      const endRow = Math.min(level.rows - 1, Math.floor(viewportBottom / tileWorldSize) + this.tileBuffer);
+      const startColumn = Math.max(0, Math.floor(viewportLeft / tileWorldSize) - tileBuffer);
+      const endColumn = Math.min(level.columns - 1, Math.floor(viewportRight / tileWorldSize) + tileBuffer);
+      const startRow = Math.max(0, Math.floor(viewportTop / tileWorldSize) - tileBuffer);
+      const endRow = Math.min(level.rows - 1, Math.floor(viewportBottom / tileWorldSize) + tileBuffer);
 
       const nextKeys = new Set();
 
@@ -212,8 +311,13 @@
         }
       }
 
+      const visibleKeys =
+        mode === "interactive" && this.currentLevelIndex === level.index
+          ? new Set([...this.currentKeys, ...nextKeys])
+          : nextKeys;
+
       for (const [key, element] of this.tileElements) {
-        if (nextKeys.has(key)) {
+        if (visibleKeys.has(key)) {
           element.hidden = false;
           continue;
         }
@@ -221,7 +325,11 @@
         element.hidden = true;
       }
 
-      this.pruneTiles(nextKeys, level.index);
+      for (const [key, pendingTile] of this.pendingTiles) {
+        pendingTile.hidden = !visibleKeys.has(key);
+      }
+
+      this.pruneTiles(visibleKeys, level.index);
 
       this.currentKeys = nextKeys;
       this.currentLevelIndex = level.index;
@@ -232,37 +340,140 @@
         return;
       }
 
-      let tile = this.tileElements.get(key);
       const originX = column * this.manifest.tileSize;
       const originY = row * this.manifest.tileSize;
       const tilePixelWidth = Math.min(this.manifest.tileSize, level.width - originX);
       const tilePixelHeight = Math.min(this.manifest.tileSize, level.height - originY);
-      const worldX = originX * factor;
-      const worldY = originY * factor;
-      const worldWidth = tilePixelWidth * factor;
-      const worldHeight = tilePixelHeight * factor;
+      const layout = {
+        left: originX * factor,
+        top: originY * factor,
+        width: tilePixelWidth * factor,
+        height: tilePixelHeight * factor,
+      };
+      const existingTile = this.tileElements.get(key);
+      const pendingTile = this.pendingTiles.get(key);
 
-      if (!tile) {
-        tile = document.createElement("img");
-        tile.className = "design-world-tile";
-        tile.decoding = "async";
-        tile.loading = this.tileLoading;
-        tile.draggable = false;
-        tile.alt = "";
-        tile.dataset.tileKey = key;
-        tile.src = `${this.baseUrl}/level-${level.index}/${column}-${row}.png`;
-        this.tileElements.set(key, tile);
-        this.surface.appendChild(tile);
+      if (existingTile) {
+        this.applyTileLayout(existingTile, layout);
+        this.touchTileElement(existingTile);
+        existingTile.hidden = false;
+        return;
       }
 
-      tile.style.left = `${worldX}px`;
-      tile.style.top = `${worldY}px`;
-      tile.style.width = `${worldWidth}px`;
-      tile.style.height = `${worldHeight}px`;
-      tile.hidden = false;
+      if (pendingTile) {
+        pendingTile.layout = layout;
+        pendingTile.hidden = false;
+        pendingTile.lastUsedAt = this.nextTileUsage();
+        return;
+      }
+
+      const nextPendingTile = {
+        key,
+        levelIndex: level.index,
+        column,
+        row,
+        hidden: false,
+        layout,
+        lastUsedAt: this.nextTileUsage(),
+        url: this.getTileUrl(level.index, column, row),
+      };
+
+      this.pendingTiles.set(key, nextPendingTile);
+      this.loadTile(nextPendingTile);
+    }
+
+    getTileUrl(levelIndex, column, row) {
+      return `${this.baseUrl}/level-${levelIndex}/${column}-${row}.${this.tileExtension}`;
+    }
+
+    nextTileUsage() {
+      this.tileUsageClock += 1;
+      return this.tileUsageClock;
+    }
+
+    touchTileElement(element, lastUsedAt = this.nextTileUsage()) {
+      element.dataset.tileUsage = String(lastUsedAt);
+    }
+
+    getTileUsage(element) {
+      const lastUsedAt = Number.parseInt(element?.dataset?.tileUsage ?? "0", 10);
+      return Number.isFinite(lastUsedAt) ? lastUsedAt : 0;
+    }
+
+    applyTileLayout(element, layout) {
+      element.style.left = `${layout.left}px`;
+      element.style.top = `${layout.top}px`;
+      element.style.width = `${layout.width}px`;
+      element.style.height = `${layout.height}px`;
+    }
+
+    async loadTile(pendingTile) {
+      const tile = document.createElement("img");
+
+      tile.className = "design-world-tile";
+      tile.decoding = "async";
+      tile.loading = this.tileLoading;
+      tile.draggable = false;
+      tile.alt = "";
+      tile.dataset.tileKey = pendingTile.key;
+      tile.dataset.tileLevelIndex = String(pendingTile.levelIndex);
+
+      try {
+        await this.loadAndDecodeTile(tile, pendingTile.url);
+      } catch (error) {
+        if (this.pendingTiles.get(pendingTile.key) === pendingTile) {
+          this.pendingTiles.delete(pendingTile.key);
+        }
+
+        console.warn("Failed to load design world tile", error);
+        return;
+      }
+
+      if (this.pendingTiles.get(pendingTile.key) !== pendingTile || !this.surface) {
+        return;
+      }
+
+      this.applyTileLayout(tile, pendingTile.layout);
+      tile.hidden = pendingTile.hidden;
+      this.touchTileElement(tile, pendingTile.lastUsedAt);
+      this.tileElements.set(pendingTile.key, tile);
+      this.pendingTiles.delete(pendingTile.key);
+      this.surface.appendChild(tile);
+      this.pruneTiles(this.currentKeys, this.currentLevelIndex);
+    }
+
+    loadAndDecodeTile(tile, url) {
+      return new Promise((resolve, reject) => {
+        const handleLoad = async () => {
+          if (this.decodeBeforeAttach && typeof tile.decode === "function") {
+            try {
+              await tile.decode();
+            } catch (error) {
+              // Browsers can reject decode for already-complete images; display is still safe.
+            }
+          }
+
+          resolve();
+        };
+        const handleError = () => {
+          reject(new Error(`Unable to load tile: ${url}`));
+        };
+
+        tile.addEventListener("load", handleLoad, { once: true });
+        tile.addEventListener("error", handleError, { once: true });
+        tile.src = url;
+      });
     }
 
     pruneTiles(nextKeys, levelIndex) {
+      for (const key of this.pendingTiles.keys()) {
+        if (nextKeys.has(key)) {
+          continue;
+        }
+
+        this.pendingTiles.delete(key);
+      }
+
       if (this.tileEvictionPolicy === "visible-only") {
         for (const [key, element] of this.tileElements) {
           if (nextKeys.has(key)) {
@@ -286,17 +497,23 @@
           continue;
         }
 
-        const [tileLevelIndexValue = "-1"] = key.split(":");
-        const tileLevelIndex = Number.parseInt(tileLevelIndexValue, 10);
+        const tileLevelIndex = Number.parseInt(element.dataset.tileLevelIndex ?? "-1", 10);
 
         evictionCandidates.push({
           key,
           element,
+          lastUsedAt: this.getTileUsage(element),
           priority: tileLevelIndex === levelIndex ? 1 : 0,
         });
       }
 
-      evictionCandidates.sort((left, right) => left.priority - right.priority);
+      evictionCandidates.sort((left, right) => {
+        if (left.lastUsedAt !== right.lastUsedAt) {
+          return left.lastUsedAt - right.lastUsedAt;
+        }
+
+        return left.priority - right.priority;
+      });
 
       for (const candidate of evictionCandidates) {
         if (this.tileElements.size <= this.maxRetainedTiles) {
@@ -308,6 +525,8 @@
     }
 
     removeTileElement(key, element) {
+      this.pendingTiles.delete(key);
+
       if (element instanceof HTMLImageElement) {
         element.removeAttribute("src");
       }

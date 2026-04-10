@@ -56,10 +56,15 @@ const activeDesignWorldConfig = coarsePointerQuery.matches
       manifestUrl: "generated/design-v2-smaller-pyramid/manifest.json",
       baseUrl: "generated/design-v2-smaller-pyramid",
       useOverview: true,
+      decodeBeforeAttach: true,
       tileLoading: "eager",
       tileBuffer: 1,
-      tileEvictionPolicy: "none",
-      maxRetainedTiles: Number.POSITIVE_INFINITY,
+      interactiveTileBuffer: 0,
+      tileEvictionPolicy: "lru",
+      maxRetainedTiles: 48,
+      keepCurrentLevelWhileInteracting: true,
+      levelSwitchHysteresis: 0.35,
+      settleDelayMs: 120,
       maxScale: 1,
     };
 let infiniteCanvas = null;
@@ -588,10 +593,15 @@ if (designWorldElement && window.DesignWorldLayer) {
     manifestUrl: activeDesignWorldConfig.manifestUrl,
     baseUrl: activeDesignWorldConfig.baseUrl,
     useOverview: activeDesignWorldConfig.useOverview,
+    decodeBeforeAttach: activeDesignWorldConfig.decodeBeforeAttach,
     tileLoading: activeDesignWorldConfig.tileLoading,
     tileBuffer: activeDesignWorldConfig.tileBuffer,
+    interactiveTileBuffer: activeDesignWorldConfig.interactiveTileBuffer,
     tileEvictionPolicy: activeDesignWorldConfig.tileEvictionPolicy,
     maxRetainedTiles: activeDesignWorldConfig.maxRetainedTiles,
+    keepCurrentLevelWhileInteracting: activeDesignWorldConfig.keepCurrentLevelWhileInteracting,
+    levelSwitchHysteresis: activeDesignWorldConfig.levelSwitchHysteresis,
+    settleDelayMs: activeDesignWorldConfig.settleDelayMs,
     onReady: (worldSize) => {
       if (worldSize) {
         infiniteCanvas?.setCameraBounds({

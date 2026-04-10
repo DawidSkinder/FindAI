@@ -184,6 +184,7 @@
       this.spacePressed = true;
       this.syncStageState();
       event.preventDefault();
+      this.notifyStateChange();
       this.scheduleRender();
     }
 
@@ -224,6 +225,7 @@
       this.syncStageState();
       this.canvas.setPointerCapture(event.pointerId);
       event.preventDefault();
+      this.notifyStateChange();
       this.scheduleRender();
     }
 
@@ -250,6 +252,7 @@
         this.pointerY = pointer.y;
         this.pointerInside = true;
         event.preventDefault();
+        this.notifyStateChange();
         this.scheduleRender();
         return;
       }
@@ -404,6 +407,7 @@
       this.pointerX = pointer.x;
       this.pointerY = pointer.y;
       this.pointerInside = true;
+      this.notifyStateChange();
       this.scheduleRender();
     }
 
@@ -850,8 +854,6 @@
       if (this.gridVisible) {
         this.renderGrid(ctx);
       }
-
-      this.notifyStateChange();
 
       if (this.ambientGlowEnabled && this.gridVisible) {
         this.scheduleRender();

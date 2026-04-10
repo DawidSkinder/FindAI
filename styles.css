@@ -1483,6 +1483,14 @@ body.is-canvas-panning {
     -webkit-overflow-scrolling: touch;
   }
 
+  .stage[data-ui-state="reveal"] .infinite-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100svh;
+  }
+
   .stage[data-ui-state="reveal"] .manifesto-panel {
     position: absolute;
     inset: 0 0 auto;

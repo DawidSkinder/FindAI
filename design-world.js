@@ -23,6 +23,7 @@
       this.overviewImage = null;
       this.isMounted = false;
       this.useOverview = options.useOverview ?? true;
+      this.overviewPath = typeof options.overviewPath === "string" && options.overviewPath ? options.overviewPath : "";
       this.decodeBeforeAttach = options.decodeBeforeAttach ?? false;
       this.tileLoading = options.tileLoading ?? "eager";
       this.tileBuffer = Number.isFinite(options.tileBuffer) ? Math.max(0, options.tileBuffer) : 1;
@@ -116,7 +117,7 @@
       overview.decoding = "async";
       overview.draggable = false;
       overview.alt = "";
-      overview.src = `${this.baseUrl}/${this.manifest.overview}`;
+      overview.src = `${this.baseUrl}/${this.overviewPath || this.manifest.overview}`;
       overview.style.width = `${this.manifest.width}px`;
       overview.style.height = `${this.manifest.height}px`;
       this.surface.appendChild(overview);

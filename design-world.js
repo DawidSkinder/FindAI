@@ -404,6 +404,8 @@
         layout,
         lastUsedAt: this.nextTileUsage(),
         url: this.getTileUrl(level.index, column, row),
+        tile: null,
+        cancelled: false,
       };
 
       this.pendingTiles.set(key, nextPendingTile);
@@ -421,6 +423,10 @@
       tile.dataset.tileKey = key;
       tile.dataset.tileLevelIndex = String(levelIndex);
       tile.addEventListener("error", () => {
+        if (tile.dataset.tileCancelled === "true") {
+          return;
+        }
+
         this.recordTileError(tile.currentSrc || tile.src || key, "Image element failed to load");
       });
 
@@ -482,6 +488,8 @@
     async loadTile(pendingTile) {
       const tile = this.createTileElement(pendingTile.key, pendingTile.levelIndex);
 
+      pendingTile.tile = tile;
+
       try {
         await this.loadAndDecodeTile(tile, pendingTile.url);
       } catch (error) {
@@ -489,12 +497,15 @@
           this.pendingTiles.delete(pendingTile.key);
         }
 
-        this.recordTileError(pendingTile.url, error?.message ?? "Unable to load tile");
-        console.warn("Failed to load design world tile", error);
+        if (!pendingTile.cancelled) {
+          this.recordTileError(pendingTile.url, error?.message ?? "Unable to load tile");
+          console.warn("Failed to load design world tile", error);
+        }
         return;
       }
 
-      if (this.pendingTiles.get(pendingTile.key) !== pendingTile || !this.surface) {
+      if (pendingTile.cancelled || this.pendingTiles.get(pendingTile.key) !== pendingTile || !this.surface) {
+        tile.removeAttribute("src");
         return;
       }
 
@@ -506,6 +517,21 @@
       this.pendingTiles.delete(pendingTile.key);
       this.surface.appendChild(tile);
       this.pruneTiles(this.currentKeys, this.currentLevelIndex);
+    }
+
+    cancelPendingTile(key, pendingTile) {
+      if (!pendingTile) {
+        return;
+      }
+
+      pendingTile.cancelled = true;
+
+      if (pendingTile.tile instanceof HTMLImageElement) {
+        pendingTile.tile.dataset.tileCancelled = "true";
+        pendingTile.tile.removeAttribute("src");
+      }
+
+      this.pendingTiles.delete(key);
     }
 
     loadAndDecodeTile(tile, url) {
@@ -532,12 +558,12 @@
     }
 
     pruneTiles(nextKeys, levelIndex) {
-      for (const key of this.pendingTiles.keys()) {
+      for (const key of Array.from(this.pendingTiles.keys())) {
         if (nextKeys.has(key)) {
           continue;
         }
 
-        this.pendingTiles.delete(key);
+        this.cancelPendingTile(key, this.pendingTiles.get(key));
       }
 
       if (this.tileEvictionPolicy === "visible-only") {
@@ -591,7 +617,11 @@
     }
 
     removeTileElement(key, element) {
-      this.pendingTiles.delete(key);
+      const pendingTile = this.pendingTiles.get(key);
+
+      if (pendingTile) {
+        this.cancelPendingTile(key, pendingTile);
+      }
 
       if (element instanceof HTMLImageElement) {
         element.removeAttribute("src");
@@ -617,7 +647,10 @@
         this.removeTileElement(key, element);
       }
 
-      this.pendingTiles.clear();
+      for (const [key, pendingTile] of Array.from(this.pendingTiles)) {
+        this.cancelPendingTile(key, pendingTile);
+      }
+
       this.currentKeys.clear();
       this.currentLevelIndex = -1;
       this.pendingRenderMode = "settled";
